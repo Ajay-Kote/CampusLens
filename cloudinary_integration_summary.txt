@@ -1,0 +1,46 @@
+CampusLens - Cloudinary Integration Summary & Log Backup
+Date: 2026-06-15
+
+=== 1. DATABASE SCHEMA MODIFICATION ===
+- Altered the 'student_identification' table to store Cloudinary public IDs:
+  ALTER TABLE student_identification ADD COLUMN cloudinary_public_id VARCHAR(255);
+
+=== 2. BULK PHOTO IMPORT SCRIPT ===
+- Created and executed 'importPhotos.js' which processed the image mapping list.
+- Extraction Rule:
+  * htno: Filename base without extension (e.g. 237R1A0401)
+  * public_id: Path segments after '/upload/v<version>/' (e.g. students/237R1A0401)
+- Migration Summary:
+  * Total rows in mapping file: 669
+  * Successful imports: 669
+  * Skipped/Not-found entries: 0
+
+=== 3. BACKEND ROUTE & CONTROLLER CHANGES ===
+- Installed 'cloudinary' dependency.
+- Created 'config/cloudinary.js' to initialize the Cloudinary SDK using these env variables:
+  * CLOUDINARY_CLOUD_NAME
+  * CLOUDINARY_API_KEY
+  * CLOUDINARY_API_SECRET
+- Multer configuration in 'middleware/uploadMiddleware.js' set to use memoryStorage().
+- Added helpers in 'models/studentModel.js':
+  * getCloudinaryPublicId(htno)
+  * updateCloudinaryPhoto(htno, photoUrl, publicId)
+- Updated 'controllers/studentController.js':
+  * POST /api/students/:htno/photo (Admin uploading student photo)
+  * PUT /api/students/me/photo (Student uploading own photo)
+  * Logic checks for old public ID and calls 'cloudinary.uploader.destroy()' before uploading.
+  * Streams buffer upload using 'cloudinary.uploader.upload_stream()' with properties:
+    folder: 'students', public_id: htno, overwrite: true, invalidate: true.
+  * Updates 'student_identification' with secure_url and public ID.
+
+=== 4. FRONTEND FILE PICKER IMPLEMENTATION ===
+- MyProfile.jsx (Student self view) & StudentProfile.jsx (Admin detail view):
+  * Replaced the profile photo URL text inputs with a styled file picker button ("Change Photo").
+  * Limits file types to jpeg, jpg, png, and max file size to 5MB.
+  * Shows a loading spinner and toast loader while the API is in progress.
+  * Automatically sets the updated secure URL in the component state immediately without reloading.
+- IDCardGenerator.jsx:
+  * Updated profile image tags to check for external Cloudinary URLs (starting with http/https) and render them directly instead of prefixing the local server URL.
+
+=== 5. FRONTEND VERIFICATION ===
+- Verified that the Vite production bundle builds successfully with no syntax or compiler warnings/errors.

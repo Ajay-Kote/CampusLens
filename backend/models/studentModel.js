@@ -238,7 +238,7 @@ const Student = {
         sec.section_name,
         dept.department_name,
         scat.reservation_type, scat.category, scat.income, scat.ph_status, scat.scribe_required,
-        si.mole_marks, si.photo_url
+        si.mole_marks, si.photo_url, si.cloudinary_public_id
       FROM students s
       LEFT JOIN student_contacts sc ON s.htno = sc.htno
       LEFT JOIN student_parents sp ON s.htno = sp.htno
@@ -302,7 +302,8 @@ const Student = {
       },
       identification: {
         mole_marks: row.mole_marks,
-        photo_url: row.photo_url
+        photo_url: row.photo_url,
+        cloudinary_public_id: row.cloudinary_public_id
       }
     };
   },
@@ -423,6 +424,26 @@ const Student = {
     const sql = "UPDATE student_identification SET photo_url = ? WHERE htno = ?";
     const [result] = await db.query(sql, [photoUrl, htno]);
     return result.affectedRows > 0;
+  },
+
+  // Fetch only cloudinary_public_id
+  getCloudinaryPublicId: async (htno) => {
+    const sql = "SELECT cloudinary_public_id FROM student_identification WHERE htno = ?";
+    const [rows] = await db.query(sql, [htno]);
+    return rows[0]?.cloudinary_public_id || null;
+  },
+
+  // Upsert photo_url and cloudinary_public_id
+  updateCloudinaryPhoto: async (htno, photoUrl, publicId) => {
+    const [existing] = await db.query("SELECT id FROM student_identification WHERE htno = ?", [htno]);
+    if (existing.length === 0) {
+      const sql = "INSERT INTO student_identification (htno, photo_url, cloudinary_public_id) VALUES (?, ?, ?)";
+      await db.query(sql, [htno, photoUrl, publicId]);
+    } else {
+      const sql = "UPDATE student_identification SET photo_url = ?, cloudinary_public_id = ? WHERE htno = ?";
+      await db.query(sql, [photoUrl, publicId, htno]);
+    }
+    return true;
   },
 
   // Find student by email (for student login)

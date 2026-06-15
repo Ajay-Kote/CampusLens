@@ -27,6 +27,12 @@ const StudentProfile = () => {
   const [activeTab, setActiveTab] = useState("personal");
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({});
+  const [imgError, setImgError] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [formData.identification?.photo_url]);
 
   const serverUrl = import.meta.env.VITE_API_BASE_URL
     ? import.meta.env.VITE_API_BASE_URL.replace("/api", "")
@@ -77,7 +83,8 @@ const StudentProfile = () => {
     const uploadFormData = new FormData();
     uploadFormData.append("photo", file);
 
-    const toastId = toast.loading("Uploading photo...");
+    setUploadingPhoto(true);
+    const toastId = toast.loading("Uploading photo to Cloudinary...");
 
     try {
       const response = await api.post(`/students/${htno}/photo`, uploadFormData, {
@@ -86,12 +93,27 @@ const StudentProfile = () => {
 
       if (response.data?.success) {
         toast.success("Profile photo updated successfully!", { id: toastId });
-        fetchProfile(); // Reload
+        setStudent(prev => ({
+          ...prev,
+          identification: {
+            ...prev.identification,
+            photo_url: response.data.photo_url
+          }
+        }));
+        setFormData(prev => ({
+          ...prev,
+          identification: {
+            ...prev.identification,
+            photo_url: response.data.photo_url
+          }
+        }));
       }
     } catch (err) {
       console.error("Error uploading photo:", err);
       const errMsg = err.response?.data?.error || "Failed to upload photo.";
       toast.error(errMsg, { id: toastId });
+    } finally {
+      setUploadingPhoto(false);
     }
   };
 
@@ -215,27 +237,36 @@ const StudentProfile = () => {
       <div className="rounded-2xl border border-gray-150 bg-white p-6 shadow-sm">
         <div className="flex flex-col items-center gap-6 sm:flex-row">
           {/* Avatar Picture Area */}
-          <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
-            <div className="h-28 w-28 overflow-hidden rounded-2xl bg-gray-100 ring-4 ring-indigo-50 flex items-center justify-center">
-              {student.identification.photo_url ? (
+          <div className="relative group cursor-pointer" onClick={!uploadingPhoto ? handlePhotoClick : undefined}>
+            <div className="h-28 w-28 overflow-hidden rounded-2xl bg-gray-100 ring-4 ring-indigo-50 flex items-center justify-center relative">
+              {formData.identification?.photo_url && !imgError ? (
                 <img
-                  src={student.identification.photo_url.startsWith("http://") || student.identification.photo_url.startsWith("https://") ? student.identification.photo_url : `${serverUrl}${student.identification.photo_url}`}
+                  src={formData.identification.photo_url.startsWith("http://") || formData.identification.photo_url.startsWith("https://") ? formData.identification.photo_url : `${serverUrl}${formData.identification.photo_url}`}
                   alt={`${student.personal.first_name}`}
                   className="h-full w-full object-cover"
+                  onError={() => setImgError(true)}
                 />
               ) : (
                 <User className="h-12 w-12 text-gray-300" />
               )}
+              {uploadingPhoto && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                </div>
+              )}
             </div>
             {/* Upload Hover overlay */}
-            <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-indigo-950/40 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera className="h-6 w-6 text-white" />
-            </div>
+            {!uploadingPhoto && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-indigo-950/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera className="h-6 w-6 text-white" />
+              </div>
+            )}
             <input
               type="file"
               ref={fileInputRef}
               onChange={handlePhotoUpload}
               accept="image/jpeg,image/png,image/jpg"
+              disabled={uploadingPhoto}
               className="hidden"
             />
           </div>
@@ -450,6 +481,41 @@ const StudentProfile = () => {
                     {student.personal.admission_category === "ConvenerQuota" ? "Convener Quota" : (student.personal.admission_category === "ManagementQuota" ? "Management Quota" : student.personal.admission_category)}
                   </p>
                 )}
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="text-xs font-semibold text-gray-400 uppercase">Profile Photo</label>
+                <div className="mt-1 flex items-center gap-4">
+                  <div className="h-16 w-16 overflow-hidden rounded-xl bg-gray-100 ring-2 ring-indigo-50 flex items-center justify-center shrink-0">
+                    {formData.identification?.photo_url && !imgError ? (
+                      <img
+                        src={formData.identification.photo_url.startsWith("http://") || formData.identification.photo_url.startsWith("https://") ? formData.identification.photo_url : `${serverUrl}${formData.identification.photo_url}`}
+                        alt="Preview"
+                        className="h-full w-full object-cover"
+                        onError={() => setImgError(true)}
+                      />
+                    ) : (
+                      <User className="h-6 w-6 text-gray-300" />
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-xs font-semibold shadow-sm transition-colors w-fit">
+                      {uploadingPhoto ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                      ) : (
+                        "Change Photo"
+                      )}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/jpg"
+                        onChange={handlePhotoUpload}
+                        disabled={uploadingPhoto}
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="text-[10px] text-gray-400">Supported formats: JPG, JPEG, PNG (Max 5MB)</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}

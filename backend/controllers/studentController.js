@@ -2,6 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const PDFDocument = require("pdfkit");
 const Student = require("../models/studentModel");
+const cloudinary = require("../config/cloudinary");
 
 // GET /api/students
 exports.getStudents = async (req, res, next) => {
@@ -80,19 +81,113 @@ exports.uploadPhoto = async (req, res, next) => {
       });
     }
 
-    // Photo URL relative path
-    const photoUrl = `/uploads/photos/${req.file.filename}`;
-    
-    // Update db
-    const updated = await Student.updatePhotoUrl(htno, photoUrl);
-    if (!updated) {
-      // Cleanup file if DB update failed
-      fs.unlinkSync(req.file.path);
+    // Verify student exists
+    const student = await Student.findByHtno(htno);
+    if (!student) {
       return res.status(404).json({
         success: false,
-        error: "Student not found to update photo"
+        error: "Student not found"
       });
     }
+
+    // Fetch existing cloudinary public ID to delete old image
+    const oldPublicId = await Student.getCloudinaryPublicId(htno);
+    if (oldPublicId) {
+      try {
+        await cloudinary.uploader.destroy(oldPublicId);
+      } catch (destroyError) {
+        console.error("Failed to destroy old Cloudinary image:", destroyError);
+      }
+    }
+
+    // Upload to Cloudinary using stream
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: "students",
+          public_id: htno,
+          overwrite: true,
+          invalidate: true
+        },
+        (error, uploadRes) => {
+          if (error) reject(error);
+          else resolve(uploadRes);
+        }
+      );
+      stream.write(req.file.buffer);
+      stream.end();
+    });
+
+    const photoUrl = result.secure_url;
+    const publicId = result.public_id;
+
+    // Update DB
+    await Student.updateCloudinaryPhoto(htno, photoUrl, publicId);
+
+    res.status(200).json({
+      success: true,
+      message: "Photo uploaded and profile updated successfully",
+      photo_url: photoUrl
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PUT /api/students/me/photo
+exports.uploadOwnPhoto = async (req, res, next) => {
+  try {
+    const htno = req.user.htno;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: "Please upload a photo file (JPEG or PNG)"
+      });
+    }
+
+    // Verify student exists
+    const student = await Student.findByHtno(htno);
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        error: "Student not found"
+      });
+    }
+
+    // Fetch existing cloudinary public ID to delete old image
+    const oldPublicId = await Student.getCloudinaryPublicId(htno);
+    if (oldPublicId) {
+      try {
+        await cloudinary.uploader.destroy(oldPublicId);
+      } catch (destroyError) {
+        console.error("Failed to destroy old Cloudinary image:", destroyError);
+      }
+    }
+
+    // Upload to Cloudinary using stream
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: "students",
+          public_id: htno,
+          overwrite: true,
+          invalidate: true
+        },
+        (error, uploadRes) => {
+          if (error) reject(error);
+          else resolve(uploadRes);
+        }
+      );
+      stream.write(req.file.buffer);
+      stream.end();
+    });
+
+    const photoUrl = result.secure_url;
+    const publicId = result.public_id;
+
+    // Update DB
+    await Student.updateCloudinaryPhoto(htno, photoUrl, publicId);
 
     res.status(200).json({
       success: true,

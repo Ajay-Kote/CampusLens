@@ -39,6 +39,7 @@ const MyProfile = () => {
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({});
   const [imgError, setImgError] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     setImgError(false);
@@ -60,6 +61,60 @@ const MyProfile = () => {
       toast.error("Failed to load your profile.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const filetypes = /jpeg|jpg|png/i;
+    const isImage = filetypes.test(file.type) || filetypes.test(file.name);
+    if (!isImage) {
+      toast.error("Only JPEG and PNG image files are allowed.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must not exceed 5MB.");
+      return;
+    }
+
+    setUploadingPhoto(true);
+    const toastId = toast.loading("Uploading photo to Cloudinary...");
+    try {
+      const formDataObj = new FormData();
+      formDataObj.append("photo", file);
+
+      const response = await api.put("/students/me/photo", formDataObj, {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      });
+
+      if (response.data?.success) {
+        toast.success("Profile photo updated successfully!", { id: toastId });
+        setStudent(prev => ({
+          ...prev,
+          identification: {
+            ...prev.identification,
+            photo_url: response.data.photo_url
+          }
+        }));
+        setFormData(prev => ({
+          ...prev,
+          identification: {
+            ...prev.identification,
+            photo_url: response.data.photo_url
+          }
+        }));
+      }
+    } catch (err) {
+      console.error("Error uploading photo:", err);
+      const errMsg = err.response?.data?.error || "Failed to upload photo.";
+      toast.error(errMsg, { id: toastId });
+    } finally {
+      setUploadingPhoto(false);
     }
   };
 
@@ -106,22 +161,15 @@ const MyProfile = () => {
   const handleSave = async () => {
     const toastId = toast.loading("Saving changes...");
     try {
-      const allowedCategories = ["contact", "address", "personal"];
+      const allowedCategories = ["contact", "address"];
       if (!allowedCategories.includes(activeTab)) {
         toast.error("You are not allowed to update this category.", { id: toastId });
         return;
       }
 
-      let body = {};
-      if (activeTab === "personal") {
-        body = {
-          photo_url: formData.identification?.photo_url
-        };
-      } else {
-        body = {
-          [activeTab]: formData[activeTab]
-        };
-      }
+      const body = {
+        [activeTab]: formData[activeTab]
+      };
 
       const response = await api.put("/students/me", body);
       if (response.data?.success) {
@@ -162,8 +210,8 @@ const MyProfile = () => {
     { id: "category", label: "Category & Fees", icon: Award },
   ];
 
-  // Contact, address, and profile photo (via personal tab) are editable by the student
-  const isEditableTab = activeTab === "contact" || activeTab === "address" || activeTab === "personal";
+  // Only contact and address tabs are editable by the student
+  const isEditableTab = activeTab === "contact" || activeTab === "address";
 
   return (
     <div className="space-y-6">
@@ -369,7 +417,7 @@ const MyProfile = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="text-xs font-semibold text-gray-550 uppercase">Profile Photo URL</label>
+                <label className="text-xs font-semibold text-gray-555 uppercase">Profile Photo</label>
                 <div className="mt-1 flex items-center gap-4">
                   <div className="h-16 w-16 overflow-hidden rounded-xl bg-gray-100 ring-2 ring-indigo-50 flex items-center justify-center shrink-0">
                     {formData.identification?.photo_url && !imgError ? (
@@ -383,14 +431,23 @@ const MyProfile = () => {
                       <User className="h-6 w-6 text-gray-300" />
                     )}
                   </div>
-                  <input
-                    type="text"
-                    disabled={!editMode}
-                    value={formData.identification?.photo_url || ""}
-                    onChange={(e) => handleFieldChange("identification", "photo_url", e.target.value)}
-                    placeholder="Paste direct image URL (e.g., https://example.com/photo.jpg)"
-                    className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500"
-                  />
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-xs font-semibold shadow-sm transition-colors w-fit">
+                      {uploadingPhoto ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                      ) : (
+                        "Change Photo"
+                      )}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/jpg"
+                        onChange={handlePhotoUpload}
+                        disabled={uploadingPhoto}
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="text-[10px] text-gray-400">Supported formats: JPG, JPEG, PNG (Max 5MB)</span>
+                  </div>
                 </div>
               </div>
             </div>

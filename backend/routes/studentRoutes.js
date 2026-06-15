@@ -7,6 +7,7 @@ const { requireRole } = require("../middleware/authMiddleware");
 // Student self-profile endpoints
 router.get("/me", requireRole("student"), studentController.getOwnProfile);
 router.put("/me", requireRole("student"), studentController.updateOwnProfile);
+router.put("/me/photo", requireRole("student"), upload.single("photo"), studentController.uploadOwnPhoto);
 
 // Admin-only endpoints
 router.get("/", requireRole("admin"), studentController.getStudents);
