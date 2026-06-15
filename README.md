@@ -121,9 +121,7 @@ The application will open on `http://localhost:5173`.
 
 ## 🔒 Default Administrator Accounts
 To test the admin console, use one of the seeded accounts:
-* **User 1**: `ajay` / `password123`
-* **User 2**: `krish` / `password123`
-* **User 3**: `admin` / `admin123`
+* **User 1**: `admin` / `admin123`
 
 *(Password changes can be updated securely in the settings dashboard).*
 
