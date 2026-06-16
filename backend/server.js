@@ -16,9 +16,10 @@ const errorMiddleware = require("./middleware/errorMiddleware");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Enable CORS for frontend running on localhost:5173
+// Enable CORS for frontend running on localhost:5173 or deployed production URL
+const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: frontendUrl === "*" ? true : frontendUrl.split(","),
   credentials: true
 }));
 
