@@ -10,13 +10,25 @@ const Student = {
     let whereClauses = [];
 
     const branchMap = {
-      "CSE": ["5", "62", "66", "67"],
-      "ECE": ["4"],
-      "IT": ["12", "33"],
-      "EEE": ["2"],
-      "MECH": ["3"],
-      "CIVIL": ["1"]
+      "CSE": ["5", "05"],
+      "ECE": ["4", "04"],
+      "IT": ["12"],
+      "CSIT": ["33"],
+      "CSM": ["66"],
+      "CSD/AIML": ["67"],
+      "EEE": ["2", "02"],
+      "MECH": ["3", "03"],
+      "CIVIL": ["1", "01"],
+      "CSE-CS": ["62"],
+      "AIDS": ["73"]
     };
+
+    if (filters.search) {
+      const searchPattern = `%${filters.search}%`;
+      whereClauses.push("(s.htno LIKE ? OR s.first_name LIKE ? OR s.last_name LIKE ? OR CONCAT(COALESCE(s.first_name, ''), ' ', COALESCE(s.last_name, '')) LIKE ?)");
+      params.push(searchPattern, searchPattern, searchPattern, searchPattern);
+      countParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
+    }
 
     if (filters.branch) {
       const codes = branchMap[filters.branch] || [filters.branch];
@@ -82,9 +94,14 @@ const Student = {
         s.htno,
         CONCAT(COALESCE(s.first_name, ''), ' ', COALESCE(s.last_name, '')) AS name,
         CASE 
-          WHEN sa.branch_code IN ('5', '62', '66', '67') THEN 'CSE'
-          WHEN sa.branch_code = '4' THEN 'ECE'
-          WHEN sa.branch_code IN ('12', '33') THEN 'IT'
+          WHEN sa.branch_code IN ('5', '05') THEN 'CSE'
+          WHEN sa.branch_code IN ('4', '04') THEN 'ECE'
+          WHEN sa.branch_code = '12' THEN 'IT'
+          WHEN sa.branch_code = '33' THEN 'CSIT'
+          WHEN sa.branch_code = '66' THEN 'CSM'
+          WHEN sa.branch_code = '67' THEN 'CSD/AIML'
+          WHEN sa.branch_code = '62' THEN 'CSE-CS'
+          WHEN sa.branch_code = '73' THEN 'AIDS'
           WHEN sa.branch_code = '2' THEN 'EEE'
           WHEN sa.branch_code = '3' THEN 'MECH'
           WHEN sa.branch_code = '1' THEN 'CIVIL'
@@ -126,12 +143,17 @@ const Student = {
     let whereClauses = [];
 
     const branchMap = {
-      "CSE": ["5", "62", "66", "67"],
-      "ECE": ["4"],
-      "IT": ["12", "33"],
-      "EEE": ["2"],
-      "MECH": ["3"],
-      "CIVIL": ["1"]
+      "CSE": ["5", "05"],
+      "ECE": ["4", "04"],
+      "IT": ["12"],
+      "CSIT": ["33"],
+      "CSM": ["66"],
+      "CSD/AIML": ["67"],
+      "EEE": ["2", "02"],
+      "MECH": ["3", "03"],
+      "CIVIL": ["1", "01"],
+      "CSE-CS": ["62"],
+      "AIDS": ["73"]
     };
 
     if (filters.branch) {

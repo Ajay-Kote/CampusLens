@@ -9,10 +9,11 @@ import {
   LogOut,
   GraduationCap,
   User,
-  Key
+  Key,
+  X
 } from "lucide-react";
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }) => {
   const { logout, role } = useAuth();
   const location = useLocation();
 
@@ -55,11 +56,22 @@ const Sidebar = () => {
   const menuItems = role === "student" ? studentMenuItems : adminMenuItems;
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-20 flex h-full w-64 flex-col border-r border-gray-200 bg-white shadow-sm">
+    <aside className={`fixed inset-y-0 left-0 z-30 flex h-full w-64 flex-col border-r border-gray-200 bg-white shadow-sm transition-transform duration-300 md:translate-x-0 ${
+      isOpen ? "translate-x-0" : "-translate-x-full"
+    }`}>
       {/* Header */}
-      <div className="flex h-16 items-center gap-2 border-b border-gray-200 px-6">
-        <GraduationCap className="h-8 w-8 text-indigo-600" />
-        <span className="text-xl font-bold tracking-tight text-gray-900">CampusLens</span>
+      <div className="flex h-16 items-center justify-between border-b border-gray-200 px-6">
+        <div className="flex items-center gap-2">
+          <GraduationCap className="h-8 w-8 text-indigo-600" />
+          <span className="text-xl font-bold tracking-tight text-gray-900">CampusLens</span>
+        </div>
+        <button
+          onClick={onClose}
+          className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 focus:outline-none md:hidden"
+          aria-label="Close Sidebar"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Navigation Links */}

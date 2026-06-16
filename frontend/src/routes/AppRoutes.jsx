@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
@@ -25,6 +25,11 @@ const RootRedirect = () => {
 // Shared layout for dashboard pages (with Sidebar and Topbar)
 const DashboardLayout = () => {
   const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
 
   // Dynamic titles depending on active path
   const titleMap = {
@@ -44,12 +49,20 @@ const DashboardLayout = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar - fixed left */}
-      <Sidebar />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+
+      {/* Backdrop for mobile */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-gray-900/40 backdrop-blur-sm md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
       {/* Main Content Area */}
-      <div className="flex-1 pl-64 pt-16">
-        <Topbar title={title} />
-        <main className="p-8">
+      <div className="flex-1 pl-0 md:pl-64 pt-16 min-w-0">
+        <Topbar title={title} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+        <main className="p-4 sm:p-6 md:p-8">
           <Outlet />
         </main>
       </div>

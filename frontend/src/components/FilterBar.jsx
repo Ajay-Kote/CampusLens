@@ -72,6 +72,9 @@ const FilterBar = ({ filters, onFilterChange }) => {
             <option value="CSE">CSE (Computer Science)</option>
             <option value="ECE">ECE (Electronics)</option>
             <option value="IT">IT (Info Tech)</option>
+            <option value="CSIT">CSIT (Comp Sci & Info Tech)</option>
+            <option value="CSM">CSM (CSE - AI & ML)</option>
+            <option value="CSD/AIML">CSD/AIML (CSE - Data Science/AI)</option>
             <option value="EEE">EEE (Electrical)</option>
             <option value="MECH">MECH (Mechanical)</option>
             <option value="CIVIL">CIVIL (Civil)</option>

@@ -46,7 +46,7 @@ const Directory = () => {
       try {
         const queryParams = {
           page: currentPage,
-          limit: 10,
+          limit: 100,
           branch: filters.branch,
           section: filters.section,
           year: filters.year,

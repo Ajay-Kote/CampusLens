@@ -39,7 +39,7 @@ const DataTable = ({ columns, data, onRowClick }) => {
                         <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-100 ring-2 ring-gray-100 transition-transform group-hover:scale-105">
                           {row.photo_url ? (
                             <img
-                              src={row.photo_url.startsWith("http://") || row.photo_url.startsWith("https://") ? row.photo_url : `${serverUrl}${row.photo_url}`}
+                              src={row.photo_url.startsWith("http://") || row.photo_url.startsWith("https://") ? row.photo_url : `${serverUrl}${row.photo_url}${row.photo_url.includes("?") ? "&" : "?"}token=${encodeURIComponent(localStorage.getItem("token") || "")}`}
                               alt={row.name}
                               className="h-full w-full object-cover"
                               onError={(e) => {

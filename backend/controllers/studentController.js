@@ -7,13 +7,22 @@ const cloudinary = require("../config/cloudinary");
 // GET /api/students
 exports.getStudents = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, branch, section, year, gender, category, admission_category } = req.query;
+    const { page = 1, limit = 10, search, branch, section, year, gender, category, admission_category } = req.query;
 
     const result = await Student.findAll(
-      { branch, section, year, gender, category, admission_category },
+      { search, branch, section, year, gender, category, admission_category },
       parseInt(page, 10),
       parseInt(limit, 10)
     );
+
+    if (result.students && Array.isArray(result.students)) {
+      result.students = result.students.map(s => {
+        if (s.photo_url) {
+          s.photo_url = `/api/students/${s.htno}/photo`;
+        }
+        return s;
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -35,6 +44,10 @@ exports.getStudentByHtno = async (req, res, next) => {
         success: false,
         error: "Student not found"
       });
+    }
+
+    if (profile.identification && profile.identification.photo_url) {
+      profile.identification.photo_url = `/api/students/${htno}/photo`;
     }
 
     res.status(200).json({
@@ -127,7 +140,7 @@ exports.uploadPhoto = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Photo uploaded and profile updated successfully",
-      photo_url: photoUrl
+      photo_url: `/api/students/${htno}/photo`
     });
   } catch (error) {
     next(error);
@@ -192,8 +205,44 @@ exports.uploadOwnPhoto = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Photo uploaded and profile updated successfully",
-      photo_url: photoUrl
+      photo_url: "/api/students/me/photo"
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/students/:htno/photo (Admin Proxy)
+exports.getPhoto = async (req, res, next) => {
+  try {
+    const { htno } = req.params;
+    const student = await Student.findByHtno(htno);
+    if (!student || !student.identification?.photo_url) {
+      return res.status(404).json({ success: false, error: "Photo not found" });
+    }
+
+    const imageUrl = student.identification.photo_url;
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      return res.status(response.status).json({ success: false, error: "Failed to fetch image from storage" });
+    }
+
+    res.setHeader("Content-Type", response.headers.get("content-type") || "image/jpeg");
+    res.setHeader("Cache-Control", "public, max-age=86400"); // cache for 1 day
+
+    const { Readable } = require("stream");
+    const nodeStream = Readable.fromWeb(response.body);
+    nodeStream.pipe(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/students/me/photo (Student Proxy)
+exports.getOwnPhoto = async (req, res, next) => {
+  try {
+    req.params.htno = req.user.htno;
+    return exports.getPhoto(req, res, next);
   } catch (error) {
     next(error);
   }
@@ -253,14 +302,27 @@ exports.generateIdCard = async (req, res, next) => {
     // Check if photo exists
     let photoLoaded = false;
     if (profile.identification.photo_url) {
-      const fullPhotoPath = path.join(__dirname, "..", profile.identification.photo_url);
-      if (fs.existsSync(fullPhotoPath)) {
-        try {
-          doc.image(fullPhotoPath, photoX, photoY, { width: photoWidth, height: photoHeight });
-          photoLoaded = true;
-        } catch (e) {
-          console.error("Failed to render student photo in PDF:", e);
+      const photoUrl = profile.identification.photo_url;
+      try {
+        if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) {
+          const imgRes = await fetch(photoUrl);
+          if (imgRes.ok) {
+            const arrayBuffer = await imgRes.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            doc.image(buffer, photoX, photoY, { width: photoWidth, height: photoHeight });
+            photoLoaded = true;
+          } else {
+            console.error(`Failed to fetch photo from Cloudinary (HTTP ${imgRes.status}) for PDF`);
+          }
+        } else {
+          const fullPhotoPath = path.join(__dirname, "..", photoUrl);
+          if (fs.existsSync(fullPhotoPath)) {
+            doc.image(fullPhotoPath, photoX, photoY, { width: photoWidth, height: photoHeight });
+            photoLoaded = true;
+          }
         }
+      } catch (e) {
+        console.error("Failed to render student photo in PDF:", e);
       }
     }
 
@@ -343,6 +405,10 @@ exports.getOwnProfile = async (req, res, next) => {
     }
     if (profile.identification) {
       delete profile.identification.mole_marks;
+    }
+
+    if (profile.identification && profile.identification.photo_url) {
+      profile.identification.photo_url = "/api/students/me/photo";
     }
 
     res.status(200).json({

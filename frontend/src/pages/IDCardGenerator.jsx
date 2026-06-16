@@ -135,6 +135,9 @@ const IDCardGenerator = () => {
             <option value="CSE">CSE</option>
             <option value="ECE">ECE</option>
             <option value="IT">IT</option>
+            <option value="CSIT">CSIT</option>
+            <option value="CSM">CSM</option>
+            <option value="CSD/AIML">CSD/AIML</option>
             <option value="EEE">EEE</option>
             <option value="MECH">MECH</option>
             <option value="CIVIL">CIVIL</option>
@@ -165,7 +168,7 @@ const IDCardGenerator = () => {
                     <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-gray-100 flex items-center justify-center">
                       {student.photo_url ? (
                         <img
-                          src={student.photo_url.startsWith("http://") || student.photo_url.startsWith("https://") ? student.photo_url : `${serverUrl}${student.photo_url}`}
+                          src={student.photo_url.startsWith("http://") || student.photo_url.startsWith("https://") ? student.photo_url : `${serverUrl}${student.photo_url}${student.photo_url.includes("?") ? "&" : "?"}token=${encodeURIComponent(localStorage.getItem("token") || "")}`}
                           alt=""
                           className="h-full w-full object-cover"
                         />
@@ -240,7 +243,7 @@ const IDCardGenerator = () => {
                 <div className="flex h-24 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded bg-gray-100 border border-gray-200 shadow-sm">
                   {selectedStudent.identification.photo_url ? (
                     <img
-                      src={selectedStudent.identification.photo_url.startsWith("http://") || selectedStudent.identification.photo_url.startsWith("https://") ? selectedStudent.identification.photo_url : `${serverUrl}${selectedStudent.identification.photo_url}`}
+                      src={selectedStudent.identification.photo_url.startsWith("http://") || selectedStudent.identification.photo_url.startsWith("https://") ? selectedStudent.identification.photo_url : `${serverUrl}${selectedStudent.identification.photo_url}${selectedStudent.identification.photo_url.includes("?") ? "&" : "?"}token=${encodeURIComponent(localStorage.getItem("token") || "")}`}
                       alt=""
                       className="h-full w-full object-cover"
                     />

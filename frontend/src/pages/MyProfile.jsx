@@ -223,7 +223,7 @@ const MyProfile = () => {
             <div className="h-28 w-28 overflow-hidden rounded-2xl bg-gray-100 ring-4 ring-indigo-50 flex items-center justify-center">
               {formData.identification?.photo_url && !imgError ? (
                 <img
-                  src={formData.identification.photo_url.startsWith("http://") || formData.identification.photo_url.startsWith("https://") ? formData.identification.photo_url : `${serverUrl}${formData.identification.photo_url}`}
+                  src={formData.identification.photo_url.startsWith("http://") || formData.identification.photo_url.startsWith("https://") ? formData.identification.photo_url : `${serverUrl}${formData.identification.photo_url}${formData.identification.photo_url.includes("?") ? "&" : "?"}token=${encodeURIComponent(localStorage.getItem("token") || "")}`}
                   alt={`${student.personal.first_name}`}
                   className="h-full w-full object-cover"
                   onError={() => setImgError(true)}
@@ -422,7 +422,7 @@ const MyProfile = () => {
                   <div className="h-16 w-16 overflow-hidden rounded-xl bg-gray-100 ring-2 ring-indigo-50 flex items-center justify-center shrink-0">
                     {formData.identification?.photo_url && !imgError ? (
                       <img
-                        src={formData.identification.photo_url.startsWith("http://") || formData.identification.photo_url.startsWith("https://") ? formData.identification.photo_url : `${serverUrl}${formData.identification.photo_url}`}
+                        src={formData.identification.photo_url.startsWith("http://") || formData.identification.photo_url.startsWith("https://") ? formData.identification.photo_url : `${serverUrl}${formData.identification.photo_url}${formData.identification.photo_url.includes("?") ? "&" : "?"}token=${encodeURIComponent(localStorage.getItem("token") || "")}`}
                         alt="Preview"
                         className="h-full w-full object-cover"
                         onError={() => setImgError(true)}
